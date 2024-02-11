@@ -1,15 +1,16 @@
 const url = require('node:url');
 const { JSDOM } = require('jsdom')
 
-
 function normalizeURL(oldUrl){
+
       try {
             const newUrl = new URL(oldUrl);
-            let norm = `${newUrl.hostname}${newUrl.pathname}`;
+            let norm = `${newUrl.protocol}${newUrl.hostname}${newUrl.pathname}`;
             norm = norm.replace(/\/$/, '');
-            return norm;
+            let normUrl = new URL(norm)
+            return normUrl;
       } catch (error) {
-            console.log('Invalid URL')
+            throw Error(`Failed to process: ${oldUrl.toString()}`);
       }
 }
 function getURLfromHTML(html,rootUrl) {
@@ -21,8 +22,49 @@ const { window } = new JSDOM(html);
     return urls;
 }
 
-
+async function crawlPage(root, currentURL, pages){
+      const normRoot = normalizeURL(root)
+      if (currentURL.hostname !== normRoot.hostname) {
+           return pages
+      }
+      let normCurrent = normalizeURL(currentURL)
+      if (normCurrent.toString() in pages) {
+            pages[normCurrent.toString()]++
+            return pages
+      }
+            if (normRoot.toString() === normCurrent.toString()) {
+                  pages[normRoot.toString()] = 0
+            } else {
+                  pages[currentURL.toString()] = 1
+            }
+      
+      console.log(`trying to fetch ${normCurrent}`)
+      try {
+            function delay(timeInMillis) {
+                  return new Promise(resolve => setTimeout(resolve, timeInMillis));
+            }
+            await delay(2000); // delay 1s
+            const response = await fetch(normCurrent)
+            if (!response.ok){
+                  console.log(normCurrent.toString())
+                  console.log(`an error: ${response.status}`)
+                  return
+            }
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("text/html") !== -1) {
+                  await delay(2000); // delay 1s
+                  let pageText = await response.text();
+                  let urls = getURLfromHTML(pageText,root);
+                  let normUrls = urls.map(url => normalizeURL(url));
+                  let crawlMap = normUrls.map(url => crawlPage(normRoot,url,pages))
+                  await Promise.all(crawlMap)
+                  return pages
+    }
+      } catch (error) {
+      console.log("Failed to fetch " + normCurrent + " due to: " + error)}
+}
 module.exports = {
       normalizeURL,
-      getURLfromHTML
+      getURLfromHTML,
+      crawlPage
 }
