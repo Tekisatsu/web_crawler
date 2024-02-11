@@ -1,4 +1,5 @@
 const { crawlPage } = require('./crawl.js')
+const { printReport } = require('./report.js')
 function main(){
       const argv = process.argv.slice(2);
       if (argv.length !== 1){
@@ -9,7 +10,7 @@ function main(){
       console.log(`crawler is starting ${baseurl}`)
       let pages = {}
       crawlPage(baseurl,baseurl,pages).then(result => {
-            console.log(result);
+            printReport(result)
       });
 }
 

@@ -38,12 +38,11 @@ async function crawlPage(root, currentURL, pages){
                   pages[currentURL.toString()] = 1
             }
       
-      console.log(`trying to fetch ${normCurrent}`)
       try {
             function delay(timeInMillis) {
                   return new Promise(resolve => setTimeout(resolve, timeInMillis));
             }
-            await delay(2000); // delay 1s
+            await delay(200); // delay
             const response = await fetch(normCurrent)
             if (!response.ok){
                   console.log(normCurrent.toString())
@@ -52,7 +51,7 @@ async function crawlPage(root, currentURL, pages){
             }
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.indexOf("text/html") !== -1) {
-                  await delay(2000); // delay 1s
+                  await delay(200); // delay
                   let pageText = await response.text();
                   let urls = getURLfromHTML(pageText,root);
                   let normUrls = urls.map(url => normalizeURL(url));
